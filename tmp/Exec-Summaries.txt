@@ -63,6 +63,12 @@ Key Security Actions:
 [4] Adopt SOPS (Secret OPerationS) and Helm-Secrets for Secrets Management: 
     - Utilize SOPS for client-side encryption of sensitive files, managed with AWS KMS. Use Helm-Secrets plugin for secure Helm value management.
 
+[5] Container Image Scanning:
+    - Implement image scanning as a mandatory step in the CI/CD pipeline, with the policy to fail the pipeline if vulnerabilities are detected in the scan report.
+    - Options:
+        - Trivy (Open Source)
+        - AWS ECR Image Scanner (Incurs charges per scan)
+
 Conclusion: These initiatives aim to fortify our Kubernetes infrastructure, ensuring compliance, reducing vulnerabilities, and enhancing overall security.
 
 =====
@@ -103,7 +109,19 @@ Gatekeeper:
 	- It uses Kubernetes' dynamic admission control features to intercept API requests to the Kubernetes API server and 
 	  apply the defined policies to these requests, either allowing or denying them based on the policy.
 	  
-	  
+
+Container Image Scanning
+--------------------------
+Open-Source Solution
+- Trivy
+
+AWS Solution
+- ECR image scanner (charged per scan)
+
+Recommendation
+- Scan images as part of CI/CD pipeline
+- Fail CI/CD pipeline if the scan report shows vulnerabilities
+
 
 Secrets Management
 --------------------
