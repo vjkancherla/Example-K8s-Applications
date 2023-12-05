@@ -1,0 +1,307 @@
+Frequently used kubectl commands
+----------------------------------
+
+IMPORTANT: Use global option "--as <username>" to run any of the below commands as a different user
+
+>>>> Connect to clusters <<<<
+-------------------------------
+=> kubectl config view
+shows merged kubeconfig settings
+
+=> kubectl config get-contexts
+shows all clusters the kubectl is configured to access
+
+=> kubectl config current-context
+shows that cluster that kubectl is configured to currently access
+
+=> kubectl config use-context arn:aws:eks:eu-west-1:024430813892:cluster/vija0326-eks-cluster 
+switches to a new EKS cluster
+
+=> gcloud container clusters get-credentials CLUSTER_NAME --zone <zone>
+Generate a kubeconfig entry for a GKE cluster
+
+
+>>>> Cluster Version <<<<
+---------------------------
+=> kubectl version
+print full client and server K8s versions
+
+=> kubectl version --short
+print short client and server K8s versions
+
+=> kubectl get nodes
+to see the K8s version on nodes
+
+
+>>>> List Resources <<<<
+---------------------------
+Note: you can use the "-A" switch to get resources across all namespaces
+
+=> kubectl get ns
+prints all NameSpaces
+
+=> kubectl get svc -o wide
+prints all the services, along with their DNS and selectors, in the default namespace
+
+=> kubectl get pods -o wide
+prints all pods, along with the info about Nodes on which the pods are running, in the default namespace
+
+=> kubectl get nodes -o wide
+prints all nodes, along with some additional info, in the default namespace
+
+=> kubectl get deployments -o wide 
+prints all deployments, in the default namespace
+
+=> kubectl get ingress 
+prints all Ingress resources, in the default namespace
+
+=> kubectl get po -n kube-system
+prints ALL resources in the "kube-system" namespace. **Use this to see the Ingress Controller
+
+=> kubectl get all 
+print all pods, services, deployments and replica-sets, in all namespaces
+
+=> kubectl get all -n metabase
+print all pods, services, deployments and replica-sets, only in metabase namespace
+
+=> kubectl get pv
+print all persistent volumes
+
+=> kubectl get pvc -n metabase (or -A for all namespaces)
+print the persistent volume claims in metabase namespace
+
+=> kubectl get secret -n nextgen
+
+=> kubectl get externalsecret -n nextgen
+
+=> kubectl get secret -n nextgen -o yaml <name-of-the-secret>
+print the contents of the secret
+
+=> kubectl get crd
+print all the custom resource objects deployed to the cluster
+
+
+>>>> Describe Resources <<<<
+--------------------------------
+=> kubectl describe pods/auth-b4d88b8d9-lb6bl
+prints detailed info regarding the specific pod, in this case - auth-b4d88b8d9-lb6bl
+
+=> kubectl describe nodes/ip-192-168-170-99.ap-southeast-1.compute.internal
+prints detailed info regarding the specific node, in this case - ip-192-168-170-99.ap-southeast-1.compute.internal 
+Also prints info regarding which deployments/pods are running on the node, and what their memory/cpu utilisation is 
+
+=> kubectl describe deployments/vijayk-test-deployment
+prints detailed info regarding the specific deployment, in this case - vijayk-test-deployment
+
+=> kubectl describe ingress/vijay-k-ingress
+prints detailed info regarding the specific ingress resource, in this case - vijayk-ingress
+
+=> kubectl get deployment/<deployment-name> -o yaml
+prints out/download the deployment configuration's YAML file
+
+
+>>>> Create/Update/Configure Resources <<<<
+----------------------------------------------
+=> kubectl run nginx-pod --image nginx:alpine
+Creates a pod with name "nginx-pod" and image "nginx:alpine"
+
+=> kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
+creates a deployment to deploy an image
+
+=> kubectl apply -f <YAML file>
+creates/updates the resources defined in the YAML file
+
+=> kubectl replace --force -f <YAML file>
+delete and recreate all resources in this YAML file.
+
+=> kubectl apply -f aws-auth-cm.yaml
+!!AWS SPECIFIC!! used to attach nodes to the cluster, by specifying the IAM role the nodes are using. And, for giving non-root IAM users permissions to access the EKS cluster
+
+=> kubectl expose deployment auth --type=LoadBalancer --name=auth --port=80 --target-port 80
+exposes the deployment, called "auth", to the internet, by creating an Classic ELB, with TCP:80 listener, and forwarding to TCP:80 on the backend
+
+=> kubectl edit deployment/<deployment-name>
+edit a deployment in-place. Changes will take effect immediately.
+
+=> kubectl get configmap/aws-auth -n kube-system -o yaml
+prints out the aws-auth config-map that is used to map a NodeGroup to an EKS cluster
+
+=> kubectl edit configmap/aws-auth -n kube-system
+used to update the existing aws-auth config map, when you need to add/remove a NodeGroup to/from EKS cluster
+
+=> kubectl label node/ip-10-120-144-253.us-west-2.compute.internal dedicated- 
+deletes the label "dedicated" from the specified node
+
+=> kubectl label node/ip-10-120-144-253.us-west-2.compute.internal dedicated=medium 
+adds the label "dedicated=medium" to the specified node
+
+=> kubectl taint node ip-10-120-144-253.us-west-2.compute.internal dedicated- 
+deletes the taint "dedicated" from the specified node
+
+=> kubectl taint node ip-10-120-144-253.us-west-2.compute.internal dedicated=medium:NoSchedule 
+adds the taint "dedicated=medium:NoSchedule" to the specified node
+
+
+>>>> Test any command (dry-run), or get the yaml for any command <<<<
+------------------------------------------------------------
+=> kubectl create deployment --image=nginx nginx --dry-run=client -o yaml
+
+--dry-run: By default as soon as the command is run, the resource will be created.
+           If you simply want to test your command , use the --dry-run=client option. 
+           This will not create the resource, instead, tell you whether the resource can be created and if your command is right.
+
+-o yaml: This will output the resource definition in YAML format on screen.
+
+
+>>>> Delete Resources <<<<
+------------------------------
+=> kubectl delete svc/auth
+deletes the service/ELBv1 which has the name "auth"
+
+=> kubectl delete deployments/frontend
+deletes the deployment which has the name "frontend"
+
+=> kubectl delete deployments/<ingress-controller-name> 
+deletes the ingress controller
+
+=> kubectl delete ingress/<ingress-name>
+deletes the ingress resource (i.e., the listener rules of an ALB)
+
+=> kubectl config delete-context arn:aws:eks:eu-west-1:024430813892:cluster/vija0326-eks-cluster 
+deletes a cluster ref from your local config
+
+=> kubectl delete pods <pod> --grace-period=0 --force
+force delete pod
+
+
+>>> Get Logs and Events <<<<
+-------------------------------
+=> kubectl logs deployments/<deployment-name> 
+get logs for a specific deployment
+
+=> kubectl logs pods/<pod-name> 
+get logs for a specific pod
+
+=> kubectl logs pods/<pod-name> --tail 5 --follow 
+tail the pod logs
+
+=> kubectl get events -n nifi
+get all the events for a given NameSpace. Useful when you want to investigate why a pod was restarted
+
+=> kubectl get event -n nifi --field-selector involvedObject.name=yotra-core-nifi-0
+get all events for a specific pod
+
+
+>>> Copy files from local system to a Pod <<<
+------------------------------------------------
+=> kubectl cp ~/Downloads/Yotra/2023_keystore_root_int_crt_stg.p12 nifi/yotra-core-nifi-0:/tmp/
+copies the local file onto the pod "yotra-core-nifi-0" in namespace "nifi"
+
+
+>>>> Get CPU/Memory usage <<<<
+---------------------------------
+=> kubectl top pod yotra-core-nifi-0 -n nifi
+get total cpu and mem being consumed by a pod
+
+=> kubectl top pod yotra-core-nifi-0 -n nifi --containers
+get a breakdown of cpu and mem being consumed by each container within a pod
+
+
+>>>> Scaling and AutoScaling <<<<
+-------------------------------------
+=> kubectl scale deployment kubernetes-bootcamp --replicas=3
+Set the baseline number of Deployment replicas to 3
+
+=> kubectl autoscale deployment hello-app --cpu-percent=80 --min=1 --max=5
+Create a HorizontalPodAutoscaler resource for your Deployment to AutoScale the Pods base on the CPU usage
+
+
+>>>> Executing commands on the container (within a POD)  <<<<
+---------------------------------------------------------------
+NOTE: If there  is only container in the POD, we need not specify the container name in the commands
+
+=> kubectl exec <POD_NAME> -- env
+list the environment variables
+
+=> kubectl exec -it <POD_NAME> -- bash
+start a bash session in the Pod’s container
+
+==> kubectl exec -it kubernetes-bootcamp-57978f5f5d-h2zmb -- curl localhost:8080
+Run a CURL command in a container
+
+
+>>> Exposing PODs using Services <<<<
+----------------------------------------
+>> kubectl expose deployment kubernetes-bootcamp --name=kubernetes-bootcamp-service --type=LoadBalancer --port 80 --target-port 8080
+On GKE, create a Network LB to forward requests to port 8080 in PODs
+
+>> kubectl expose deployment/kubernetes-bootcamp --type="NodePort" --port 8080
+Create a Internal LB of type "NodePort". This opens a static port on each Worker Node and 
+setups NAT rules to forward traffic from the static port to port 8080 on PODs
+Run "kubectl get svc/kubernetes-bootcamp to find the static port, it will be in the 32000 range"
+
+
+>>> Rolling Updates <<<<
+--------------------------
+>> kubectl scale deployment kubernetes-bootcamp --replicas=3
+Set the baseline number of Deployment replicas to 3
+
+>> kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/google-samples/kubernetes-bootcamp:v2
+Command notified the Deployment to use a different image for your app and initiated a rolling update
+
+>> kubectl rollout status deployments/kubernetes-bootcamp
+Check the status of the rolling update
+
+>> kubectl rollout pause deployments/kubernetes-bootcamp
+Pause a rolling update
+
+>> kubectl rollout resume deployments/kubernetes-bootcamp
+Resume a rolling update
+
+>> kubectl rollout history deployments/kubernetes-bootcamp
+See the history of rolling updates for a deployment
+
+**>> kubectl rollout undo deployments/kubernetes-bootcamp
+** The rollout undo command reverts the deployment to the previous known state (v2 of the image). 
+Updates are versioned and you can revert to any previously known state of a deployment. 
+
+
+>>> Cordoning and Draining Nodes <<<
+--------------------------------------
+>> kubectl cordon gke-rax-example-cluster-default-pool-b6398e3b-psj4 
+This will make all the node as "non-schedulable" (i.e., no new pod can be scheduled on the node)
+NOTE: We no longer need to explicitly run the "cordon" command. Running the "drain" command will automatically run "cordon" command 
+
+>> kubectl drain gke-rax-example-cluster-default-pool-b6398e3b-psj4 --ignore-daemonsets
+This will cause all the pods on the node to be evicted and be scheduled on a new node.
+Note: If there are any PVs/PVCs associated with the pods, then there should be a new Node available in the same AZ as the original PVs were created in.
+
+>> kubectl uncordon gke-rax-example-cluster-default-pool-b6398e3b-psj4 
+Re-enables scheduling of Pods on the node
+
+
+>>> Delete All Resources <<<
+-------------------------------
+>> kubectl delete all --all
+Will delete all non-admin resources from the current namespace (which is normally the default namespace)
+
+>> kubectl delete all --all -n {namespace}
+Will delete all non-admin resources from the specified namespace
+
+>> kubectl delete "$(kubectl api-resources --namespaced=true --verbs=delete -o name | tr "\n" "," | sed -e 's/,$//')" --all
+Will delete everything
+
+
+>>> Verifying Authorization Access <<<
+-----------------------------------------
+- Once the roles and rolebindings have been created, we can verify access using the "kubectl auth can-i --as <user-name>" command
+- EG:
+	>> kubectl auth can-i get pods --as dev-user
+	>> kubectl auth can-i create deployments --namespace blue --as dev-user
+	
+	
+>>> Set NameSpace <<<
+-------------------------
+>>  kubectl config set-context --current --namespace=K21
+All kubectl commands will run in the specified namespace
+

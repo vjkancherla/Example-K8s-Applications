@@ -1,0 +1,80 @@
+CONTINUOUS INTEGRATION
+===========================
+
+CI/CD Server: Jenkins
+	- running on K8s
+	- runs Jenkins agents as pods, on K8s
+	- the agent pods use different resources configurations based on the type of job
+	- K8s cluster: arn:aws:eks:us-east-1:546849288051:cluster/dev-tools-karpenter
+
+
+CI - PRE-MERGE
+------
+[1] When a PR is created, the following "pre-merge" CI job is triggered in Jenkins:
+
+	- Pipeline: unity-ci
+
+	- Git Branch Source Behaviour: 
+		- Discover Branches: All branches [Git-Plugin] 
+		- Discover Pull Requests from Origin: The current pull request revision [Git-Plugin] 
+		- Filter by name (with wildcards): Include=> PR-* [SCM API Plugin]
+		
+	
+	- Specify ref specs: +refs/heads/*:refs/remotes/@{remote}/* [Git-Plugin] 
+	
+	- Build strategies [Basic Branch Build Strategies Plugin]:
+		- Regular branches 
+		- Change requests 
+			- Ignore rebuilding merge branches when only the target branch changed
+			- Ignore change requests flagged as originating from an untrusted source
+			
+	- Build Configuration
+		- Mode: by JenkinsFile
+		- Script Path: deploy/pipelines/jenkins/Jenkinsfile.ci
+	
+	- Pipeline Action Triggers
+		- Include Filter: *
+	
+	
+	
+CI - POST-MERGE
+----
+[1] When a PR is merged the following "post-merge" CI job is triggered in Jenkins:
+
+	- Branches on which this Job is triggered: master, prod/s116, prod/s117
+	
+	- Pipeline: unity-ci-rc
+	
+	- Git Branch Source Behaviour:
+		- Discover Branches: All branches [Git-Plugin] 
+		- Filter by name (with wildcards): Include=> master prod/s116 prod/s117 [SCM API Plugin]
+		
+	- Custom Github Notification Context [Github Custom Notification Context SCM Behaviour Plugin]
+		- Label: continuous-integration/unity-ci-rc
+		
+	- Specify ref specs: +refs/heads/*:refs/remotes/@{remote}/* [Git-Plugin] 
+	
+	- Build strategies [Basic Branch Build Strategies Plugin]:
+		- Regular branches 
+		- Change requests 
+			- Ignore rebuilding merge branches when only the target branch changed
+			- Ignore change requests flagged as originating from an untrusted source
+			
+	- Build Configuration
+		- Mode: by JenkinsFile
+		- Script Path: deploy/pipelines/jenkins/Jenkinsfile.ci
+		
+		
+	- Pipeline Action Triggers
+		- Include Filter: *
+		
+
+
+THE TASKS PERFORMED DURING CI
+----
+All the tasks are performed through Bazel. Bazel is configured to utilize "buildbuddy" for build event viewing, result storing, remote caching, and remote build execution platform.
+	- Runs "Bazel build" to lint and build all targets
+	- Runs "Bazel test" to unit test all targets
+	- Runs SonarScanner for code coverage
+	
+		

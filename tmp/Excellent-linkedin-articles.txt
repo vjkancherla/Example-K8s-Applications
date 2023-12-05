@@ -1,0 +1,27 @@
+=====================================
+EXCELLENT ARTICLES FROM LINKEDIN
+====================================
+
+[1] Using VCLUSTER for ephemeral K8s environments:
+https://blog.devops.dev/surviving-2400-hours-of-multi-tenancy-what-i-know-now-9c48694aa75d
+
+https://medium.com/devops-dev/multi-tenancy-with-vcluster-794de061fff1
+
+https://blog.devops.dev/kubernetes-in-kubernetes-with-vcluster-a5be97ac5861
+
+
+[2] Using KEDA 
+https://dev.to/carlocolumna/keda-in-amazon-eks-part-2-scale-based-on-aws-sqs-queue-5g4d
+
+
+[3] K8s and DB migration Options:
+https://medium.com/cloud-native-daily/diving-deep-into-database-migration-on-kubernetes-a-comparative-study-777ca66c1034
+
+
+[4] Karpenter
+https://www.infracloud.io/blogs/kubernetes-workload-management-karpenter/
+
+
+[5] Continuous Delivery + Deployment with ArgoCD and Jenkins
+https://medium.com/@emrah-t/extending-your-ci-cd-pipeline-with-gitops-an-end-to-end-automation-with-argocd-and-jenkins-on-f6c39b3dcb21
+

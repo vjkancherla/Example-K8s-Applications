@@ -1,0 +1,107 @@
+https://prakhar.me/docker-curriculum/
+
+Images - The blueprints of our application which form the basis of containers. In the demo above, we used the docker pull command to download the busybox image.
+
+Containers - Created from Docker images and run the actual application. We create a container using docker run which we did using the busybox image that we downloaded. A list of running containers can be seen using the docker ps command.
+
+Docker Daemon - The background service running on the host that manages building, running and distributing Docker containers. The daemon is the process that runs in the operation system to which clients talk to.
+
+Docker Client - The command line tool that allows the user to interact with the daemon. More generally, there can be other forms of clients too - such as Kitematic which provide a GUI to the users.
+
+Docker Hub - A registry of Docker images. You can think of the registry as a directory of all available Docker images. If required, one can host their own Docker registries and can use them for pulling images.
+
+MULTI-CONTAINER DOCKER Application:
+this is where an application consists of multiple docker containers (i.e, multiple images representing separate container) that communicate with each other
+
+
+DOCKER COMMANDS
+----------------
+
+-> docker pull ubuntu [will download an ubuntu image from dockerhub]
+
+-> docker run -it ubuntu echo "hello world" [will spin up a "container" based on the ubuntu image (basically firing up a ubuntu VM), and runs the echo command with in it]
+
+-> docker run -it ubuntu bash [will spin up a "container" based on the ubuntu image, and will invoke bash shell]
+
+-> docker exec -it bb72dcebd379 bash [to log in to an already running container (get running container's id from "docker ps -a")]
+
+-> docker ps [will list all the containers that are currently running]
+
+-> docker ps -a [lists a history of all the containers that have been run]
+
+-> docker stop cd3d20906ed3 [stop a running docker container. Get the ID from "docker ps"]
+
+-> docker start cd3d20906ed3 [start a stopped container. Get the ID from "docker ps -a"]
+
+-> docker rm 305297d7a235 ff0a5c3750b9 [delete container using the Ids returned from "docker ps -a"]
+
+-> docker rm $(docker ps -a -q -f status=exited) [one line for deleting containers]
+
+-> docker run --rm -it ubuntu bash [automatically deletes the container after the container exists]
+
+-> docker images [lists all the local images]
+
+-> docker logs <ContainerID> [displays the container's log]
+
+-> docker inspect <ContainerID> [display general information about the container]
+
+-> docker port <ContainerID> [display container's port configuration]
+
+-> docker rmi -f ubuntu [force delete the ubuntu image]
+
+-> docker rmi $(docker images -f "dangling=true" -q) [deleted untagged/dangling images]
+
+-> docker build -t vijayk/foodtruckwebapp . [builds an docker image using the "Dockerfile" located in the current dir]
+
+-> docker build -f Dockerfile-gradle -t vkancherla/yotra-toolbox-gradle:latest . [builds an docker image using the custom docker file specified, and tags it]
+
+-> docker network ls [list networks created by docker]
+
+Note: The bridge network is the network in which containers are run by default
+
+-> docker network inspect bridge [inspect the bridge network. tells you if any contianer are launched in the bridge network]
+
+-> docker network create foodtrucks [creates a new bridge network called "foodtrucks"]
+
+-> docker network rm foodtrucks [delete the "foodtrucks" network]
+
+-> docker run -dp 9200:9200 --net foodtrucks --name es elasticsearch [launch a container, based on the "elasticsearc image", in to "Foodtrucks" network, and map ports on local host 9200 to the container port 9200]
+-> docker run -d --net foodtrucks -p 5000:5000 --name foodtrucks-web vijayk/foodtruckwebapp
+
+-> docker cp 6595fdbcf767:/tmp/acc.log /tmp [Copies a log file from the container to the host machine]
+
+-> to upload/download a file from the host to a container
+   docker cp foo.txt mycontainer:/foo.txt
+   docker cp mycontainer:/foo.txt foo.txt
+
+
+DOCKER COMPOSE
+---------------
+Compose is a tool that is used for defining and running multi-container Docker apps in an easy way. 
+It provides a configuration file called docker-compose.yml that can be used to bring up an application and the suite of services it depends on with just one command.
+
+-> docker-compose up -d [uses the docker-compose.yml file in the current dir, and launches a multi container docker env]
+
+NOTE: the above command will automatically create a new bridge network and launches both the containers with in it. Use "docker network ls" and "docker network inspect <network name>"
+
+-> docker-compose ps [list the running containers]
+
+-> docker-compose stop [stops the running containers]
+
+
+PUSHING IMAGES TO DOCKER HUB
+----------------------------
+1. Go to docker hub and create yourself a username (vkancherla)
+2. Build your images as vkanchera/<some image name>
+3. The run "docker images", and grab the image id of your image
+4. run "docker tag ${image_id} docker.io/${login_name}/${image_name}"
+5. docker push docker.io/${login_name}/${image_name} to publish to docker hub
+
+PULLING IMAGES FROM AWS ECR
+-----------------------------
+1. Copy and paste AWS credentials from Janus into Terminal
+2. Login into ECR
+>> aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 891458232478.dkr.ecr.eu-west-2.amazonaws.com
+3. Pull the image
+>> docker pull 891458232478.dkr.ecr.eu-west-2.amazonaws.com/yotra-toolbox
+

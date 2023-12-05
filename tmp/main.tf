@@ -1,43 +1,104 @@
-#!/bin/bash
-# This script automates the Terraform workflow for multiple directories.
+provider "aws" {
+  region = "us-east-1" # Change to your desired AWS region
+}
 
-# Accept the environment name as an optional command-line argument.
-env_name=$1
+resource "aws_vpc" "example" {
+  cidr_block = "10.0.0.0/16"
+}
 
-# Set a default environment name if it's not provided.
-if [ -z "$env_name" ]; then
-  env_name="non-prod"
-fi
+resource "aws_subnet" "subnet1" {
+  vpc_id     = aws_vpc.example.id
+  cidr_block = "10.0.1.0/24"
+  availability_zone = "us-east-1a" # Change to your desired availability zone
 
-# Loop through each subdirectory in the current directory.
-for dir in $(ls -d */ | cut -f1 -d '/'); do
-  echo ""
-  echo "Entering Directory: ${dir}"
-  cd "${dir}"
+  # Tags for subnet1
+  tags = {
+    Name = "Subnet 1"
+    Environment = "Development"
+  }
+}
 
-  echo ""
-  echo "Executing 'terraform init'..."
-  terraform init
+resource "aws_subnet" "subnet2" {
+  vpc_id     = aws_vpc.example.id
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "us-east-1b" # Change to your desired availability zone
 
-  echo ""
-  echo "Executing 'terraform plan -var-file=envs/${env_name}.tfvars -out=${dir}-tfplan'..."
-  terraform plan -var-file=envs/${env_name}.tfvars -out=${dir}-tfplan
+  # Tags for subnet2
+  tags = {
+    Name = "Subnet 2"
+    Environment = "Production"
+  }
+}
 
-  # Check if the plan contains any changes (non-empty "refresh" or "apply" actions)
-  plan_output=$(terraform show -json ${dir}-tfplan)
-  if [[ $plan_output == *"refresh"* || $plan_output == *"apply"* ]]; then
-    echo ""
-    echo "Executing 'terraform apply -input=false ${dir}-tfplan'..."
-    terraform apply -input=false ${dir}-tfplan
-  else
-    echo ""
-    echo "No changes detected, skipping 'terraform apply'."
-  fi
+# Add more subnets as needed and specify tags for each one
+provider "aws" {
+  region = "us-east-1" # Change to your desired AWS region
+}
 
-  # Clean up the plan file.
-  rm "${dir}-tfplan"
+resource "aws_vpc" "example" {
+  cidr_block = "10.0.0.0/16"
+}
 
-  echo ""
-  echo "Exiting Directory: ${dir}"
-  cd ..
-done
+resource "aws_subnet" "subnet1" {
+  vpc_id     = aws_vpc.example.id
+  cidr_block = "10.0.1.0/24"
+  availability_zone = "us-east-1a" # Change to your desired availability zone
+
+  # Tags for subnet1
+  tags = {
+    Name = "Subnet 1"
+    Environment = "Development"
+  }
+}
+
+resource "aws_subnet" "subnet2" {
+  vpc_id     = aws_vpc.example.id
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "us-east-1b" # Change to your desired availability zone
+
+  # Tags for subnet2
+  tags = {
+    Name = "Subnet 2"
+    Environment = "Production"
+  }
+}
+
+# Add more subnets as needed and specify tags for each one
+
+
+variable "var_a" {
+  default = [{ a = "b" }, { b = "c" }, { c = "d" }]
+}
+
+variable "var_b" {
+  default = [{ c = "d" }]
+}
+
+# Convert var_a and var_b to sets
+locals {
+  set_a = toset(var.var_a)
+  set_b = toset(var.var_b)
+}
+
+# Calculate the difference between set_a and set_b
+locals {
+  var_c = setdifference(local.set_a, local.set_b)
+}
+
+output "var_c" {
+  value = local.var_c
+}
+
+
+variable "var_a" {
+  default = [{a = "b"}, {b = "c"}, {c = "d"}]
+}
+
+variable "var_b" {
+  default = [{c = "d"}]
+}
+
+variable "var_c" {
+  default = [for item in var_a : item if !contains(var(var_b), item)]
+}
+

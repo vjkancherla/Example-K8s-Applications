@@ -1,0 +1,103 @@
+ASDF
+=======
+- asdf is a tool version manager. 
+- All tool version definitions are contained within one file (.tool-versions) which you can check in 
+  to your project's Git repository to share with your team, ensuring everyone is using the exact same versions of tools.
+
+- https://www.youtube.com/watch?v=4-tYwl12uyE
+- https://asdf-vm.com/guide/getting-started.html
+
+
+COMMANDS
+==========
+>> asdf plugin list
+List installed plugins
+
+
+>> asdf plugin list all
+List all available plugins
+
+
+>> asdf plugin add java
+Install the plugin for "java"
+NOTE: We have only installed the plugin for managing/installing 'java', not java itself. 
+
+
+>> asdf plugin remove java
+Uninstall "java"
+
+
+>> asdf list java
+List the installed versions of java
+
+
+>> asdf list-all java
+List all available versions of java
+
+
+>> asdf latest java
+List the latest available version of java
+
+
+>> asdf list-all java open
+List all available versions of java, filter by string "open". Will list all OpenJDK java versions
+
+
+>> asdf install java openjdk-19.0.2
+Install java openjdk-19.0.2
+Note: The specified java version is installed but not set as default. See below
+
+
+>> asdf global java openjdk-19.0.2
+Set the java to be of version openjdk-19.0.2 system-wide
+
+NOTE: You might need to close and reopen terminal for this to take effect
+NOTE: writes the version to $HOME/.tool-versions
+
+
+>> asdf global java system
+Set the java to be of version installed on the system (outside of asdf)
+
+
+
+".tool-versions" FILE
+=========================
+- .tool-versions is the file that stores version specific tool information for ASDF to use
+- Global defaults can be set in the file $HOME/.tool-versions
+- Whenever .tool-versions file is present in a directory, the tool versions it declares will be used in that directory and any subdirectories.
+
+EXAMPLES:
+$HOME/.tool-versions
+----
+java openjdk-19.0.2
+---
+Defines that java-openjdk-19.0.2 should be used globally
+
+
+PWD/.tool-versions
+----
+java system
+----
+Overrides the global default for the current directory and its subdirectories (uses system installed java)
+
+
+PWD/.tool-versions
+----
+java openjdk-20.0.2
+----
+Overrides the global default for the current directory and its subdirectories to use openjdk-20.0.2
+NOTE: You will prompted to run "asdf install java openjdk-20.0.2" to install the version if its not already available
+
+
+
+INSTALLING ALL VERSION LISTED IN ".tool-versions" FILE
+============================================================
+You can create a ".tools-versions" file like below and check-it-in into Git.
+
+=====
+java openjdk-20.0.2
+terraform 1.0.7
+=====
+
+People can then checkout the repo and install all the tools at the right versions by running:
+>> asdf install 

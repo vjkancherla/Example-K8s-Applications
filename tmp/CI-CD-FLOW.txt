@@ -1,0 +1,85 @@
+[1] A PR is created in GitHub
+
+[2] unity-ci pipeline is triggered by GiHub via a Webhook into Jenkins
+
+	PS: "unity-cd-pr" pipeline was also being triggered, earlier. But I can't find that pipeline anymore
+
+[3] unity-ci pipeline build does the following:
+	- Runs "Bazel build" to lint and build all targets
+	- Runs "Bazel test" to unit test specific targets
+	- Runs SonarScanner for code coverage
+	
+	
+[4] Prow/Tide automatically merges the PR into Master if:
+	- approved by a official-approver
+	- unity-ci pipeline build succeeded
+	
+	
+[5] When the PR is merged into Master, both CI and CD pipelines are triggered simultaneously
+
+
+[6] CI - unity-ci-rc pipeline is triggered by GiHub via a Webhook into Jenkins. unity-ci-rc pipeline build does the following:
+	- Runs "Bazel build" to lint and build all targets
+	- Runs "Bazel test" to unit test all targets
+	- Runs SonarScanner for code coverage
+	
+
+[7] CD - unity-cd-rc pipeline is triggered, simultaneously, by GiHub via a Webhook into Jenkins. unity-cd-rc pipeline build does the following:
+	- Build images and push to repo (Bazel)
+	- Build Helm Charts and push to repo (Bazel)
+	- Deploy charts to ci-ats-v2 cluster, under namespace rc-master (or rc-prod-s117, rc-prod-s116)
+	- Run Test suite (e-2-e tests)
+	- Uninstall charts
+	
+
+[8] The build artefacts created by CD (above) are tagged using the git commit hash (first 8 digits)
+
+
+[9] When deploying to Daily/UAT/Demo/Prod-RC, we specify a commit hash as a parameter to the pipeline. 
+The build artefacts associated with the commit are then pulled from the repos and deployed to K8s.
+
+
+TRADITONAL CI/CD PIPELINE
+----
+CI:
+	- lint
+	- build
+	- unit test
+	- Sonarqube (static code analysis)
+	- build container image
+	- scan container image
+	- create/update helm chart
+	- policy check for helm chart
+	- push container image to repo
+	- push helm chart to repo
+	- configure the CI job to trigger the CD job upon successful completion (using post-build-actions)
+	
+CD: 
+	- spin up a test env
+	- deploy the helm charts (built in CI) to test env
+	- run integration, smoke, acceptance and e-2-e tests
+	- tear down the env, or uninstall helm chart so that the env is ready for next deployment
+	
+	
+	
+TRUMID CI/CD PIPELINE
+----
+Triggered simultaneously for each commit
+
+CI:
+	- lint
+	- build
+	- unit test
+	- Sonarqube (static code analysis)
+	
+CD:
+	- build container image
+	- scan container image
+	- create/update helm chart
+	- push container image to repo
+	- push helm chart to repo
+	- ensure test namespace is prepped
+	- deploy the helm charts (built in CI) to test namespace
+	- run integration, smoke, acceptance and e-2-e tests
+	- tear down the env, or uninstall helm chart so that the env is ready for next deployment
+	

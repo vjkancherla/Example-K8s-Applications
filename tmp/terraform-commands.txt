@@ -1,0 +1,210 @@
+TERRAFORM COMMANDS
+-----------------------
+
+INIT
+----
+>> terraform init
+
+>> terraform init -no-color '-backend=true' \
+'-backend-config=bucket=e634f62843f1401e83849455f8674bb8-terraform' \
+'-backend-config=region=us-west-2'
+
+>> terraform init -no-color -input=false -backend=true \
+-backend-config=bucket=392079366176-tf-state \
+-backend-config=region=us-east-1 \
+-backend-config=key=terraform.000base.tfstate \
+-backend-config=encrypt=true \
+-backend-config=dynamodb_table=terraform_lock_392079366176 \
+-lock=true
+
+
+PLAN
+-----
+>> terraform plan
+
+>> terraform plan \
+-target=module.elasticsearch.aws_elasticsearch_domain.es \
+-target=module.nat
+ONLY Plans the specific modules
+
+>> terraform plan \
+-var-file=./terraform.tfvars \
+-var aws_account_id=235914517732 \
+-var layer=use1_pandora_200compute
+
+>> terraform plan -no-color -input=false \
+-var-file=envs/pr.tfvars \
+-var aws_account_id=948965224631 \
+-var layer=000base 
+ 
+
+APPLY
+-----
+>> terraform apply
+
+>> terraform apply \
+-var-file=./terraform.tfvars \
+-var aws_account_id=235914517732 \
+-var layer=use1_pandora_200compute
+
+>> terraform apply -no-color \
+-var-file=envs/pr.tfvars \
+-var aws_account_id=948965224631 \
+-var layer=000base 
+
+>> terraform apply \
+-target=module.elasticsearch.aws_elasticsearch_domain.es \
+-target=module.nat
+ONLY apply the specific modules
+
+
+WORKSPACE [Used with Phoenix 1.5]
+----------
+>> terraform workspace list
+
+>> terraform workspace new dev
+
+>> terraform workspace select dev
+
+
+TAINT [Force resource re-creation]
+------
+>> terraform taint -module=elasticsearch aws_elasticsearch_domain.es
+
+>> terraform taint module.elasticsearch.aws_elasticsearch_domain.es
+
+>> terraform taint "module.ec2_ar.aws_instance.mod_ec2_instance_with_secondary_ebs[0]"
+
+Taint all resources in a module
+>> terraform state list | grep module.module_name | xargs -n1 terraform taint
+
+UN-TAINT
+----------
+>> terraform untaint "module.haproxy_ec2_ar.aws_instance.mod_ec2_instance_with_tertiary_ebs[0]"
+
+
+TERRAFORM STATE [SHOW INFORMATION]
+-------------------------------
+>> terraform show 
+print the ENTIRE state file contents
+
+>> terraform state list module.internal_alb_pandora_internal
+list the resources created by a module
+
+>> terraform state list "aws_route.remote_vpc_route[1]"
+
+>> terraform state show module.smb_ec2.aws_instance.mod_ec2_instance_no_secondary_ebs 
+print details of all resources created by a module
+
+>> terraform state show 'aws_route53_record.alias_csv["greenchallenge_info"]'
+
+
+TERRAFORM STATE [DOWNLOAD and UPLOAD STATE FILEs]
+----------------------------------------------------
+>> terraform state pull 
+
+>> terraform state push -force ./use1_pandora_000base.tfstate
+
+
+TERRAFORM STATE MANIPULATION
+------------------------------
+
+==MOVE==
+>> terraform state mv module.external_alb_pandora.module.alb.aws_lb.application module.external_alb_pandora.aws_lb.alb 
+Updates a resource's reference to a new name
+
+>> terraform state mv "module.external_alb_koala_client.module.alb.aws_lb_target_group.main" "module.external_alb_koala_client.aws_lb_target_group.main[0]
+
+==REMOVE==
+>> terraform state rm "module.pandora_event_storage_0.aws_db_option_group.db_option_group[0]"
+removes a resource's reference from TF state
+
+==IMPORT==
+>> terraform import module.frontend_ecs.modules.cluster.aws_ecs_cluster.ecs-cluster Frontend-Cluster
+Import an existing resource into TF state
+
+>> terraform import \
+-var-file=envs/production.tfvars \
+-var aws_account_id=523195929219 \
+-var layer=000base \
+'aws_route.remote_vpc_route["rtb-0877a08d36c422f12.10.32.72.0/22"]' rtb-0877a08d36c422f12_10.32.72.0/22
+Import an existing resource to a resource block created by for_each
+
+
+FORMAT
+-------
+>> terraform fmt
+>> terraform fmt -recursive
+
+
+DEBUGGING AND LOGGING
+-----------------------
+export TF_LOG=TRACE
+export TF_LOG_PATH=~/downloads/tmp/tf-debug.log
+
+
+PROVIDERS
+------------
+>> terraform providers
+List which modules are using which providers
+
+>> terraform state replace-provider -auto-approve -- -/aws hashicorp/aws
+Replaces the "-/aws" provider with the hashicorp/aws one.
+This command was used whilst upgrading to TFv13 and there were references to "-/aws" provider in TF state
+
+>>terraform state replace-provider -auto-approve -- -/null hashicorp/null
+Replaces the "-/null" provider with the hashicorp/null one.
+This command was used whilst upgrading to TFv13 and there were references to "-/null" provider in TF state
+
+>>terraform state replace-provider -auto-approve -- -/template hashicorp/template
+Replaces the "-/template" provider with the hashicorp/template one.
+This command was used whilst upgrading to TFv13 and there were references to "-/template" provider in TF state
+
+>>terraform state replace-provider -auto-approve -- -/random hashicorp/random
+Replaces the "-/random" provider with the hashicorp/random one.
+This command was used whilst upgrading to TFv13 and there were references to "-/random" provider in TF state
+
+
+https://github.com/hashicorp/terraform-provider-aws/issues/14763
+https://github.com/hashicorp/terraform/issues/25819
+
+
+UNLOCK 
+---------
+Error: Error locking state: Error acquiring the state lock: ConditionalCheckFailedException: The conditional request failed
+Lock Info:
+  ID:        e55d27c8-4e2e-a409-8bce-3349a17bbba2
+  Path:      235914517732-tf-state/env:/integration/use1_pandora_000base.tfstate
+  Operation: init
+  Who:       vija0326@MRG4KDG8WN
+  Version:   0.13.2
+  Created:   2021-04-26 13:18:07.619106 +0000 UTC
+  Info:      
+
+>> terraform force-unlock e55d27c8-4e2e-a409-8bce-3349a17bbba2
+
+
+PROVIDER VERSION
+-------------------
+https://www.terraform.io/docs/language/expressions/version-constraints.html
+
+aws = {
+      source  = "hashicorp/aws"
+      version = "~> 3.28.0"
+    }
+==> "~> 3.28.0" will allow only "PATCHED" provider versions
+Allows only the rightmost version component to increment. 
+For example, to allow new patch releases within a specific minor release, use the full version number: ~> 1.0.4 
+will allow installation of 1.0.5 and 1.0.10 but not 1.1.0. This is usually called the pessimistic constraint operator.
+    
+aws = {
+      source  = "hashicorp/aws"
+      version = ">= 3.28.0"
+    }
+==> ">= 3.28.0" will allow ALL provider versions >=3.28.0
+    
+
+TERRAFORM DOCS
+-----------------
+v10 ==> terraform-docs md . > README.md
+v13 ==> /usr/local/Cellar/terraform-docs/0.13.0/bin/terraform-docs md . > README.md

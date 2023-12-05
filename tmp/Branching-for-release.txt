@@ -1,0 +1,125 @@
+SEE: https://docs.google.com/spreadsheets/d/1IycWdr7NPLGYpQWVPJxU2kb2F6Jg7RCO/edit?pli=1#gid=61478434
+
+
+BRANCHING FOR MAJOR RELEASE (s116) TO PRODUCTION
+==========================================
+[Week 24th - 30th Jul]
+[1] On Friday, July 28th, a commit on the Master branch is identified as the release candidate (how?)
+
+[2] A new branch, called prod/s116 is created ("branch is cut") from the commit identified in step-1
+
+[3] The unity/source-branch.yaml file is updated and the following is set:
+	- PRODRC_DEPLOY_BRANCH: "prod/s117"
+
+
+
+PROGRESSING THE RELEASE (s116) THROUGH NON-PROD ENVS
+====================================================
+[Week 31st Jul - 6th Aug]
+
+A release branch had been created on Friday, July 28th. Starting from the following Monday, 31st July, the following happens
+
+[1] Every week night, via CRON, the prod/s116 branch's HEAD is deployed to Prod-RC Env
+
+[2] On Thursday, 3rd Aug, manually, the prod/s116 branch's HEAD is deployed to UAT Env
+
+IMPORTANT: Thursday EoD is the deadline for updates to prod/s116 branch.
+
+[3] On Friday, 4th Aug, following the deploy to UAT on previous evening, Regression/QA is performed
+
+
+[Week 7th Aug - 13th Aug]
+
+[4] Every week night, via CRON, the prod/s116 branch's HEAD is deployed to Prod-RC Env
+
+[5] On Wednesday, 9th Aug, the prod/s116 branch's HEAD is deployed to Demo Env
+
+[5.1] Also on Wednesday, 9th Aug, QA sign's off on the release, and a Commit on /prod/s116 branch is identified as the release candidate
+
+[6] On Thursday, 10rd Aug, manually, the commit identified in step-1.5 is deployed to UAT Env. Final testing is performed
+
+
+
+VERIFYING THE RELEASE (s116) IN PRE-PROD ENV
+===================================================
+[Week 7th Aug - 13th Aug]
+
+[1] Whilst the release progresses through the Non-Prod envs, in parallel, the release is also done to Pre-Prod env
+
+Mon, 7th Aug - Thu, 10 Aug: the prod/s116 branch's HEAD is deployed to Pre-Prod
+
+
+
+DEPLOY s116 TO PRODUCTION
+===========================
+[Week 7th Aug - 13th Aug]
+
+[1] On Friday, 11th Aug, the Commit deployed to UAT is deployed to Prod
+
+
+SUMMARY: 
+
+[1] It took 2 weeks from when the release branch was cut (28th Jul) and for the branch to be deployed to Prod (11th Aug).
+[2] Demo and Prod-RC get the major release before it goes into Prod
+
+
+
+
+MINOR RELEASES TO PRODUCTION
+================================
+Following a major release (s116) on Friday (11th Aug), for the next two weeks (14th Aug - 25 Aug), we do a minor release, one each week, on a Friday (18th and 25th Aug)
+
+The releases will be named - s116.1 (18th Aug) and s116.2 (25th Aug)
+
+s116.1
+[1] Devs will keep adding commits to the Master branch
+
+[2] A very small subset of these commits are considered useful/necessary to be released to Prod ASAP. 
+    These commits are Cherry-Picked to prod/s116 branch.
+    Note: The prod/s116 branch can be "locked". Which means that all Cherry-picks will need to be manually approved.
+    
+[3] On Tuesday, 15th Aug, by 4PM all the required commits from master are Cherry-Picked into prod/s116 branch, and a RC commit on prod/s116 branch is identified
+
+[4] On Tuesday, 15th Aug, at 5PM, manually, the commit identified in step-3 is deployed to Patch env
+
+[5] On Friday, 18th Aug, the commit deployed to Patch env is deployed to Prod 
+
+
+s116.2
+[1] Devs will keep adding commits to the Master branch
+
+[2] A very small subset of these commits are considered useful/necessary to be released to Prod ASAP. 
+    These commits are Cherry-Picked to prod/s116 branch.
+    
+[3] On Tuesday, 22th Aug, by 4PM all the required commits from master are Cherry-Picked into prod/s116 branch, and a RC commit on prod/s116 branch is identified
+
+[4] On Tuesday, 22th Aug, at 5PM, manually, the commit identified in step-3 is deployed to Patch env
+
+[5] On Friday, 25th Aug, the commit deployed to Patch env is deployed to Prod 
+
+
+==
+PATCH will always have what we are releasing into Prod
+==
+
+
+
+HOT FIX BRANCHING PROCESS
+=============================
+
+We know that 
+1. prod/s116 is deployed Prod
+2. commits are cherry picked from Master into prod/s116 and then deployed as a minor release to Prod
+3. since commits are cherry picked from Master into prod/s116, the HEAD is master is not what is currently deployed to Prod
+
+Hot-fix Process
+1. a hot-fix branch is create off of master
+2. the fix is made in hot-fix branch and merged into master
+3. from the commit, of prod/s116 branch, that is currently deployed in Prod, a new branch is created - prod/s116.0.1
+4. The commit from step-2 is cherry picked into prod/s116.0.1
+5. prod/s116.0.1's HEAD is deployed to Prod
+6. prod/s116.0.1 is merged into prod/s116
+7. prod/s116.0.1 is deleted
+
+
+

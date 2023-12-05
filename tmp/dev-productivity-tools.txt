@@ -1,0 +1,15 @@
+DEV PRODUCTIVITY TOOLS
+========================
+
+ASDF
+----
+- asdf is a tool version manager. 
+- All tool version definitions are contained within one file (.tool-versions) which you can check in 
+  to your project's Git repository to share with your team, ensuring everyone is using the exact same versions of tools.
+
+- https://www.youtube.com/watch?v=4-tYwl12uyE
+- https://asdf-vm.com/guide/getting-started.html
+
+
+PRE-COMMIT HOOKS
+-----------------
