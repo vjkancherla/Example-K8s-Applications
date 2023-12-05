@@ -2,69 +2,20 @@ provider "aws" {
   region = "us-east-1" # Change to your desired AWS region
 }
 
-resource "aws_vpc" "example" {
-  cidr_block = "10.0.0.0/16"
+data "aws_subnet" "existing_subnets" {
+  ids = ["subnet-12345678", "subnet-87654321"] # Replace with the IDs of your existing subnets
 }
 
-resource "aws_subnet" "subnet1" {
-  vpc_id     = aws_vpc.example.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1a" # Change to your desired availability zone
+resource "aws_subnet" "tagged_subnets" {
+  count = length(data.aws_subnet.existing_subnets.ids)
 
-  # Tags for subnet1
+  id = data.aws_subnet.existing_subnets.ids[count.index]
+
   tags = {
-    Name = "Subnet 1"
-    Environment = "Development"
+    Name        = "Tagged Subnet ${count.index + 1}"
+    Environment = "Production" # Customize as needed
   }
 }
-
-resource "aws_subnet" "subnet2" {
-  vpc_id     = aws_vpc.example.id
-  cidr_block = "10.0.2.0/24"
-  availability_zone = "us-east-1b" # Change to your desired availability zone
-
-  # Tags for subnet2
-  tags = {
-    Name = "Subnet 2"
-    Environment = "Production"
-  }
-}
-
-# Add more subnets as needed and specify tags for each one
-provider "aws" {
-  region = "us-east-1" # Change to your desired AWS region
-}
-
-resource "aws_vpc" "example" {
-  cidr_block = "10.0.0.0/16"
-}
-
-resource "aws_subnet" "subnet1" {
-  vpc_id     = aws_vpc.example.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1a" # Change to your desired availability zone
-
-  # Tags for subnet1
-  tags = {
-    Name = "Subnet 1"
-    Environment = "Development"
-  }
-}
-
-resource "aws_subnet" "subnet2" {
-  vpc_id     = aws_vpc.example.id
-  cidr_block = "10.0.2.0/24"
-  availability_zone = "us-east-1b" # Change to your desired availability zone
-
-  # Tags for subnet2
-  tags = {
-    Name = "Subnet 2"
-    Environment = "Production"
-  }
-}
-
-# Add more subnets as needed and specify tags for each one
-
 
 variable "var_a" {
   default = [{ a = "b" }, { b = "c" }, { c = "d" }]
