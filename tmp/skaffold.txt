@@ -1,0 +1,163 @@
+SKAFFOLD
+------------
+https://skaffold.dev/docs/quickstart/
+
+Skaffold is a command line tool that facilitates continuous development for container based & Kubernetes applications.
+
+/Users/vija0326/Documents/Clients/my_ci_cd/the_ideal_pipeline/skaffold.yaml
+
+
+SKAFFOLD INIT
+----------------
+>> cd /Users/vija0326/Documents/Clients/my_ci_cd/the_ideal_pipeline
+
+>> skaffold init
+
+skaffold will automatically scan the directories will detect the Application Source Code dir and K8s manifests dirs
+
+The following output will be displayed
+========
+apiVersion: skaffold/v4beta5
+kind: Config
+metadata:
+  name: the-ideal-pipeline
+build:
+  artifacts:
+    - image: busybox
+      context: go_application
+      docker:
+        dockerfile: Dockerfile
+deploy:
+  helm:
+    releases:
+      - name: go-app-chart
+        chartPath: helm-chart
+        valuesFiles:
+          - helm-chart/values.yaml
+        version: 0.1.0 
+========
+
+
+UPDATING THE SKAFFOLD FILE FOR OUR REQUIREMENTS
+-------------------------------------------------
+Requirements:
+- build image using Kaniko
+- push image to docker hub
+- use helm charts to create dev, uat, canary and prod envs
+- deploy the helm_charts
+
+====
+apiVersion: skaffold/v4beta5
+kind: Config
+metadata:
+  name: the-ideal-pipeline
+build:
+  artifacts:
+    - image: vjkancherla/go_application
+      context: go_application <--- CD to this dir as use it as ${PWD}
+      kaniko:
+        dockerfile: Dockerfile
+  cluster:
+    dockerConfig:
+      path: go_application/config.json <-- Use this file for creds for pushing image to docker hub
+
+deploy:
+  helm: <-- Default deploy to local K8s cluster using the helm chart and its default valuess
+    releases:
+      - name: go-app-chart
+        chartPath: helm-chart
+        valuesFiles:
+          - helm-chart/values.yaml
+        version: 0.1.0
+
+profiles: <-- we want to deploy in a specific way depending on the env
+  - name: dev <-- create and deploy a dev env using dev specific helm values 
+    deploy:
+      helm:
+        releases:
+          - name: go-app-dev
+            chartPath: helm-chart
+            valuesFiles:
+              - helm-chart/namespaces/dev/values.yaml
+              - helm-chart/namespaces/dev/version.yaml
+  - name: uat <-- create and deploy a uat env using dev specific helm values 
+    deploy:
+      helm:
+        releases:
+          - name: go-app-uat
+            chartPath: helm-chart
+            valuesFiles:
+              - helm-chart/namespaces/uat/values.yaml
+              - helm-chart/namespaces/uat/version.yaml
+  - name: prod <-- create and deploy a prod env using dev specific helm values
+    deploy:
+      helm:
+        releases:
+          - name: go-app-prod
+            chartPath: helm-chart
+            valuesFiles:
+              - helm-chart/namespaces/prod/values.yaml
+              - helm-chart/namespaces/prod/version.yaml   
+  - name: canary <-- create and deploy a canary env using dev specific helm values 
+    deploy:
+      helm:
+        releases:
+          - name: go-app-canary
+            chartPath: helm-chart
+            valuesFiles:
+              - helm-chart/namespaces/canary/values.yaml
+              - helm-chart/namespaces/canary/version.yaml
+
+====
+
+
+SKAFFOLD BUILD
+-----------------
+>> skaffold build
+
+This will run the "build" section of the skaffold file.
+In our case, builds an image on Kaniko and pushes it to docker hub
+
+
+SKAFFOLD DEPLOY
+-----------------
+>> skaffold deploy
+This will run the "deploy" section of the skaffold file.
+In our case 
+
+deploy:
+  helm: <-- Default deploy to local K8s cluster using the helm chart and its default valuess
+    releases:
+      - name: go-app-chart
+        chartPath: helm-chart
+        valuesFiles:
+          - helm-chart/values.yaml
+        version: 0.1.0
+        
+        
+SKAFFOLD DEPLOY USING PROFILES
+---------------------------------
+>> skaffold deploy -p dev
+>> skaffold deploy -p uat
+>> skaffold deploy -p prod
+>> skaffold deploy -p canary
+
+Executes the specific profile to deploy to the specific environment
+
+
+SKAFFOLD RENDER
+-------------------
+See : https://skaffold.dev/docs/quickstart/#use-skaffold-for-continuous-delivery
+
+>> export STATE=$(git rev-list -1 HEAD --abbrev-commit)
+>> skaffold build --file-output build-$STATE.json
+>> skaffold render -p uat -a build-$STATE.json --output render.yaml --digest-source local
+
+This will generate the YAML files from helm templates
+
+
+SKAFFOLD DEV
+---------------
+>> skaffold dev
+Skaffold speeds up your development loop by automatically building and deploying the application whenever your code changes.
+Skaffold is now watching for any file changes, and will rebuild your application automatically.

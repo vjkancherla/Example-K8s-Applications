@@ -1,0 +1,93 @@
+How to Configure OpenLens to connect to an EKS Cluster
+=======================================================
+
+1. Download and install OpenLens - https://github.com/MuhammedKalkan/OpenLens
+
+I recommend installing the OpenLens v6.2.5 version. Post v6.2.5 certain useful features (get pod logs and login to pod) have been removed.
+
+2. Create a new AWS config profile:
+
+>> aws configure --profile Yotra-TransitHub-Dev
+
+provide the region value and leave everything else as default
+
+You will see the following, new, block in ~/.aws/config
+
+[profile Yotra-TransitHub-Dev]
+region = eu-west-2
+
+3. From Janus, grab the AWS credentials for AWS account.
+
+>> AWS Temporary Credentials > SELECT THE ~/.aws/credentials TAB. The contents will look like below
+
+[default]
+aws_access_key_id=ASIA2J6ONWR6HU5WVKEG
+aws_secret_access_key=KfjAxWweVLy7U35r0A1UcHtwe5Y8oleeR3mwdKk+
+aws_session_token=IQoJb3JpZ2luX2VjEL///////////wEaCXVzLWVhc3QtMSJHMEUCIGxkF/p4LJ0sweTiYt3iZXnAZPjThx+ewjCcmUonPxesAiEAuwgTejrMb7C6VIApfO0LOIbtoa0Xa+FJe+36tTAdwKsqlAMISBABGgw3MDg1NjU2NDQ0MTIiDOz5VtHlBAOTsRoI7irxAvK+Ak2cZQ0xI6VQSGPFF9YNlAq4MQ2ETsXf1qQShcgEmABvTZ9/IawUETYHGcbtAEMK/wiAORHkzFLu0nMheN544iGl43fYyZr7tdcaiguXobrDeSE3eUE9ObTLlc2XLFRFSaNRsTZpCCh8TLXCrv8GjmfpUWJykvF26AEt98anTxo2fomKjvASMjLSRGxky/ME/m6cstLaLL2p9EI7RqB0u3P4Ge27Qa0tyiSPsHNuOuCZOfPaBbs/QePV5Tj8PVoXZs6vivULrCnVge5iQZkojjK1D1GVhML06jRd7p7tdlGbqpMPILNmCYoURxCYZRiAD6oZGy88evpG42jMR5VZ65ird7+8sbtjVMj7bsz0CDABqYAkAa6TVhKVmeEDV5x+KdwiHqOHy4yJSmau0tPxx+GtnlgbNhs8sgTqtxIqXQU2jQF67buLC3IKaxL3R8mjm7MsI3IpL/wGj+3Uerzz8Pbc60VJJnq8JMYabBJMvjC3qoSfBjrdAbZQaBXT0oAKqb8fVKsK0g6n0NIWWzBhHvMKhYYi/mxP47jewY20gcrYvYkN/UikqO5lsFTC2j7kxfIsx+6MCP4lduu3Z2viezaBdV/cD4EPXXxaUPhch7QFqkD61gt9ZIamStmznCbJ8CE7KK93oQBIBmu0qC4yVhlvx63Yz9oplZHLQ60rLU7xaOxAoh+H4Y83nMVKKREpD14R4xn082X9ZEvXaAR1ocFt+kHpjNrlAkJ3JHBf39g3V9p92EDESunRWSg7wUkWligLiBNMqHA42hLammlOAfFplc2j
+; Credentials Expiration: February 7, 2023, 2:56:55 AM
+
+Change the line above block
+
+FROM:
+
+[default]
+aws_access_key_id=ASIA2J6ONWR6HU5WVKEG
+aws_secret_access_key=KfjAxWweVLy7U35r0A1UcHtwe5Y8oleeR3mwdKk+
+aws_session_token=IQoJb3JpZ2luX2VjEL///////////wEaCXVzLWVhc3QtMSJHMEUCIGxkF/p4LJ0sweTiYt3iZXnAZPjThx+ewjCcmUonPxesAiEAuwgTejrMb7C6VIApfO0LOIbtoa0Xa+FJe+36tTAdwKsqlAMISBABGgw3MDg1NjU2NDQ0MTIiDOz5VtHlBAOTsRoI7irxAvK+Ak2cZQ0xI6VQSGPFF9YNlAq4MQ2ETsXf1qQShcgEmABvTZ9/IawUETYHGcbtAEMK/wiAORHkzFLu0nMheN544iGl43fYyZr7tdcaiguXobrDeSE3eUE9ObTLlc2XLFRFSaNRsTZpCCh8TLXCrv8GjmfpUWJykvF26AEt98anTxo2fomKjvASMjLSRGxky/ME/m6cstLaLL2p9EI7RqB0u3P4Ge27Qa0tyiSPsHNuOuCZOfPaBbs/QePV5Tj8PVoXZs6vivULrCnVge5iQZkojjK1D1GVhML06jRd7p7tdlGbqpMPILNmCYoURxCYZRiAD6oZGy88evpG42jMR5VZ65ird7+8sbtjVMj7bsz0CDABqYAkAa6TVhKVmeEDV5x+KdwiHqOHy4yJSmau0tPxx+GtnlgbNhs8sgTqtxIqXQU2jQF67buLC3IKaxL3R8mjm7MsI3IpL/wGj+3Uerzz8Pbc60VJJnq8JMYabBJMvjC3qoSfBjrdAbZQaBXT0oAKqb8fVKsK0g6n0NIWWzBhHvMKhYYi/mxP47jewY20gcrYvYkN/UikqO5lsFTC2j7kxfIsx+6MCP4lduu3Z2viezaBdV/cD4EPXXxaUPhch7QFqkD61gt9ZIamStmznCbJ8CE7KK93oQBIBmu0qC4yVhlvx63Yz9oplZHLQ60rLU7xaOxAoh+H4Y83nMVKKREpD14R4xn082X9ZEvXaAR1ocFt+kHpjNrlAkJ3JHBf39g3V9p92EDESunRWSg7wUkWligLiBNMqHA42hLammlOAfFplc2j
+; Credentials Expiration: February 7, 2023, 2:56:55 AM
+
+TO:
+[Yotra-TransitHub-Dev]
+aws_access_key_id=ASIA2J6ONWR6HU5WVKEG
+aws_secret_access_key=KfjAxWweVLy7U35r0A1UcHtwe5Y8oleeR3mwdKk+
+aws_session_token=IQoJb3JpZ2luX2VjEL///////////wEaCXVzLWVhc3QtMSJHMEUCIGxkF/p4LJ0sweTiYt3iZXnAZPjThx+ewjCcmUonPxesAiEAuwgTejrMb7C6VIApfO0LOIbtoa0Xa+FJe+36tTAdwKsqlAMISBABGgw3MDg1NjU2NDQ0MTIiDOz5VtHlBAOTsRoI7irxAvK+Ak2cZQ0xI6VQSGPFF9YNlAq4MQ2ETsXf1qQShcgEmABvTZ9/IawUETYHGcbtAEMK/wiAORHkzFLu0nMheN544iGl43fYyZr7tdcaiguXobrDeSE3eUE9ObTLlc2XLFRFSaNRsTZpCCh8TLXCrv8GjmfpUWJykvF26AEt98anTxo2fomKjvASMjLSRGxky/ME/m6cstLaLL2p9EI7RqB0u3P4Ge27Qa0tyiSPsHNuOuCZOfPaBbs/QePV5Tj8PVoXZs6vivULrCnVge5iQZkojjK1D1GVhML06jRd7p7tdlGbqpMPILNmCYoURxCYZRiAD6oZGy88evpG42jMR5VZ65ird7+8sbtjVMj7bsz0CDABqYAkAa6TVhKVmeEDV5x+KdwiHqOHy4yJSmau0tPxx+GtnlgbNhs8sgTqtxIqXQU2jQF67buLC3IKaxL3R8mjm7MsI3IpL/wGj+3Uerzz8Pbc60VJJnq8JMYabBJMvjC3qoSfBjrdAbZQaBXT0oAKqb8fVKsK0g6n0NIWWzBhHvMKhYYi/mxP47jewY20gcrYvYkN/UikqO5lsFTC2j7kxfIsx+6MCP4lduu3Z2viezaBdV/cD4EPXXxaUPhch7QFqkD61gt9ZIamStmznCbJ8CE7KK93oQBIBmu0qC4yVhlvx63Yz9oplZHLQ60rLU7xaOxAoh+H4Y83nMVKKREpD14R4xn082X9ZEvXaAR1ocFt+kHpjNrlAkJ3JHBf39g3V9p92EDESunRWSg7wUkWligLiBNMqHA42hLammlOAfFplc2j
+; Credentials Expiration: February 7, 2023, 2:56:55 AM
+
+
+4. Open  ~/.aws/credentials file and copy the below block in
+
+[Yotra-TransitHub-Dev]
+aws_access_key_id=ASIA2J6ONWR6HU5WVKEG
+aws_secret_access_key=KfjAxWweVLy7U35r0A1UcHtwe5Y8oleeR3mwdKk+
+aws_session_token=IQoJb3JpZ2luX2VjEL///////////wEaCXVzLWVhc3QtMSJHMEUCIGxkF/p4LJ0sweTiYt3iZXnAZPjThx+ewjCcmUonPxesAiEAuwgTejrMb7C6VIApfO0LOIbtoa0Xa+FJe+36tTAdwKsqlAMISBABGgw3MDg1NjU2NDQ0MTIiDOz5VtHlBAOTsRoI7irxAvK+Ak2cZQ0xI6VQSGPFF9YNlAq4MQ2ETsXf1qQShcgEmABvTZ9/IawUETYHGcbtAEMK/wiAORHkzFLu0nMheN544iGl43fYyZr7tdcaiguXobrDeSE3eUE9ObTLlc2XLFRFSaNRsTZpCCh8TLXCrv8GjmfpUWJykvF26AEt98anTxo2fomKjvASMjLSRGxky/ME/m6cstLaLL2p9EI7RqB0u3P4Ge27Qa0tyiSPsHNuOuCZOfPaBbs/QePV5Tj8PVoXZs6vivULrCnVge5iQZkojjK1D1GVhML06jRd7p7tdlGbqpMPILNmCYoURxCYZRiAD6oZGy88evpG42jMR5VZ65ird7+8sbtjVMj7bsz0CDABqYAkAa6TVhKVmeEDV5x+KdwiHqOHy4yJSmau0tPxx+GtnlgbNhs8sgTqtxIqXQU2jQF67buLC3IKaxL3R8mjm7MsI3IpL/wGj+3Uerzz8Pbc60VJJnq8JMYabBJMvjC3qoSfBjrdAbZQaBXT0oAKqb8fVKsK0g6n0NIWWzBhHvMKhYYi/mxP47jewY20gcrYvYkN/UikqO5lsFTC2j7kxfIsx+6MCP4lduu3Z2viezaBdV/cD4EPXXxaUPhch7QFqkD61gt9ZIamStmznCbJ8CE7KK93oQBIBmu0qC4yVhlvx63Yz9oplZHLQ60rLU7xaOxAoh+H4Y83nMVKKREpD14R4xn082X9ZEvXaAR1ocFt+kHpjNrlAkJ3JHBf39g3V9p92EDESunRWSg7wUkWligLiBNMqHA42hLammlOAfFplc2j
+; Credentials Expiration: February 7, 2023, 2:56:55 AM
+
+
+5. Open ~/.kube/config
+
+Update the following
+
+FROM:
+users:
+- name: arn:aws:eks:eu-west-2:708565644412:cluster/yotra-transithub-eks
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      args:
+      - --region
+      - eu-west-2
+      - eks
+      - get-token
+      - --cluster-name
+      - yotra-transithub-eks
+      command: aws
+      
+TO:
+users:
+- name: arn:aws:eks:eu-west-2:708565644412:cluster/yotra-transithub-eks
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      args:
+      - --region
+      - eu-west-2
+      - eks
+      - get-token
+      - --cluster-name
+      - yotra-transithub-eks
+      command: aws
+      env:
+        - name: AWS_PROFILE
+          value: "Yotra-TransitHub-Dev"
+          
+6. Open OpenLens and connect to the EKS cluster
