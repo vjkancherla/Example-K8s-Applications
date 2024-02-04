@@ -1,0 +1,161 @@
+EKS SETUP
+-----------
+
+Terms that we will use:
+
+EKS Control Plane: 
+- The EKS control plane consists of control plane nodes that run the Kubernetes software, such as etcd and the Kubernetes API server.
+- It is a managed service provided by AWS t
+
+AWS Fargate:
+- AWS Fargate is a serverless technology that provides on-demand, right-sized compute capacity for containers
+- There are no servers to manage with Fargate.
+- EKS can be used to run pods on Fargate without manually provisioning any servers.
+- Using Fargate, Kubernetes pods run with just the compute capacity they request
+
+Karpenter:
+- Karpenter is an open-source tool by AWS
+- Karpenter automates the provisioning and scaling of Kubernetes clusters' worker nodes
+- Karpenter optimizes resource utilization based on workload demands.
+- When is Pod is ready to be scheduled, Karpenter proivisions a right-sized node based on the Pod's resource requirements
+
+
+Core-Service:
+Core Services encompass essential Kubernetes applications crucial for the operation and security of our applications. The key services include:
+
+- CoreDNS: Facilitates domain name resolution and service discovery within the Kubernetes cluster.
+- Kube-Proxy: Manages network communication between nodes and handles service load balancing.
+- EBS-CSI-Driver: Enables dynamic provisioning of Amazon Elastic Block Store (EBS) volumes for persistent storage within the cluster.
+- Calico: Implements networking and network security, allowing for efficient communication between containers across nodes.
+- Calico API Server: Provides a management interface for Calico, enhancing control and visibility into networking policies.
+- Karpenter
+
+A NOTE about why Calico and Calico API server are used
+Due to the limited IP range provided by our AWS VPC's CIDR, insufficient for our applications, Calico is employed to establish a virtual, extended CIDR range exclusively for Application Pods. Additionally, Calico plays a crucial role in enforcing network security through the implementation of Network Policies. The Calico API Server is utilized for creating custom Calico CRD (Custom Resource Definition) objects. These objects, in turn, enable the creation of the expanded CIDR and facilitate the definition of network policies to meet specific application requirements.
+- Our AWS VPC's CIDR range only provides a very limited range of IPs, which is not sufficient for our Applications
+- Calico is used to create a virtual, extended CIDR range to be used by Application Pods
+- Calico contributes to network security by implementing and enforcing Network Policies within the cluster.
+- The Calico API server is used to create custom Calico CRD objects, which are in-turn used to create the expanded CIDR range and network policies
+
+"hostNetwork"
+- In EKS, you can set the "hostNetwork" field in a pod's specification to true to enable the host network mode. 
+- This means the containers within the pod share the network namespace with the underlying EC2 instances in the node group, effectively using the host's network stack.
+- When using "hostNetwork" the IP addresses for Pods are allocated from within AWS VPC CIDR
+- The Control Plane and all the core-service Pods on Fargate use "hostNetwork"
+
+"Calico Network"
+- If "hostNetwork" field in a pod's specification to not set to true, then the Pods use the Calico's virtual network
+- The IP addresses for Pods are allocated from within Calico's CIDR
+
+A NOTE about connectivity between hostNetwork and Calico Network:
+- Pods on hostNetwork and Calico Network ARE NOT CONFIGURED to communicate with each other
+- IMPORTANT: The K8s API Server (part of Control Plane, on hostNetwork) will not be able to connect to any WebHooks running on Calico Network
+
+
+Third (3rd) Party add-ons and Observability add-ons
+These Kubernetes applications deliver crucial functionality for the operation and monitoring of both the EKS cluster and applications.
+
+- EFS-CSI-Driver: Facilitates dynamic provisioning of Amazon Elastic File System (EFS) volumes, enhancing storage capabilities for applications within the cluster.
+- Ingress Nginx: Manages external access to services within the cluster, acting as an HTTP and reverse proxy server for efficient and secure traffic routing.
+- Kubernetes Replicator: Enables the synchronization of resources between namespaces or clusters, providing a mechanism for efficient replication and resource management.
+- Kube-cost: Offers insights into resource usage and costs, aiding in the analysis and optimization of resource consumption within the Kubernetes environment.
+- Metrics-Server: Collects resource metrics from the cluster and provides real-time data, supporting accurate monitoring and scaling decisions.
+- Prometheus: A powerful monitoring and alerting toolkit that gathers and stores time-series data, empowering users with advanced monitoring and alerting capabilities.
+- Grafana: Works in tandem with Prometheus, providing a visualization platform for monitoring metrics and creating dashboards to gain insights into the cluster's performance.
+- Loki: A log aggregation system designed for Kubernetes, offering efficient log storage and retrieval for enhanced observability and troubleshooting.
+
+BottleRocket AMIs
+- Bottlerocket is optimized for running containers with high security isolation. 
+- BottleRocket AMIs are designed with a minimalistic approach, significantly reducing the attack surface compared to standard EKS AMIs. 
+- The host OS is extremely minimal, it does not come with bash, an interpreter, ssh, or anything beyond the system basics needed to run containers.
+- It uses an immutable root filesystem, and secure boot and limited shell access. You aren't intended to run or install things directly on the host at all.
+- By leveraging BottleRocket AMIs, we are aligning ourselves with industry best practices and strengthening our ability to meet compliance standards. 
+
+
+Architectural Overview: Control Plane, AWS Fargate, and (Karpenter provisioned) Nodes
+==============
+- Single Control Plane
+- AWS Fargate for running core services
+- (Karpenter provisioned) Nodes for running:
+	- 3rd add-ons required for providing extended functionality 
+	- Cluster monitoring applications
+	- Application workloads
+	
+- Fully private cluster, with no in-bound or out-bound internet access
+- Access to K8s API Server only from MC VPN, and peered VPCs (Jenkins Tooling VPC)
+
+
+
+KARPENTER
+============
+- Karpenter takes a unique approach to autoscaling, provisioning nodes based on application requirements rather than demand. 
+- Karpenter automatically launches just the right compute resources to handle our applications
+- Through custom Kubernetes resources called "Provisioners" and "AWSNodeTemplate", it dynamically responds to application needs, creating and adding new nodes to the cluster.
+
+Example:
+
+AWSNodeTemplate
+---
+apiVersion: karpenter.k8s.aws/v1alpha1
+kind: AWSNodeTemplate
+metadata:
+  name: bottlerocket-nt
+spec:
+  amiFamily: Bottlerocket
+  subnetSelector:
+    karpenter.sh/discovery: $MY_CLUSTER_NAME
+  securityGroupSelector:
+    karpenter.sh/discovery: $MY_CLUSTER_NAME
+  blockDeviceMappings:
+    - deviceName: /dev/xvdb
+      ebs:
+        volumeSize: 20Gi
+        volumeType: gp3
+        deleteOnTermination: true
+---
+
+Provisioner
+---
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
+metadata:
+  name: default-provisioner
+spec:
+  requirements:
+    # Include general purpose instance families
+    - key: karpenter.k8s.aws/instance-family
+      operator: In
+      values: [t3, m6, c5]
+    # Exclude small instance sizes
+    - key: karpenter.k8s.aws/instance-size
+      operator: In
+      values: [medium, large, xlarge, xlarge, 2xlarge, 4xlarge]
+  ttlSecondsUntilExpired: 604800 # expire nodes after 7 days (in seconds) = 7 * 60 * 60 * 24
+  ttlSecondsAfterEmpty: 60 # scale down nodes after 60 seconds without workloads (excluding daemons)
+  providerRef:
+    name: bottlerocket-nt
+---
+
+- Node Templates enable configuration of AWS specific settings for an EC2 instance
+	- The AMI to use
+	- The Subnets to use
+	- The SecurityGroups to use
+	- EBS volumes
+	- IAM roles
+	- Tags
+	- See https://karpenter.sh/v0.31/concepts/node-templates/ for full list
+	
+- The Provisioners sets constraints on the nodes that can be created by Karpenter and the pods that can run on those nodes
+- The Provisioner can be set to do things like:
+	- Define taints to limit the pods that can run on nodes Karpenter creates
+	- Limit node creation to certain zones, instance types, and computer architectures
+	- Set defaults for node expiration
+	
+	
+How AWSNodeTemplate and Provisioners are configured for IRTP
+- We have a single AWSNodeTemplate and multiple Provisioners
+- We have 
+	- A default Provisioner
+	- A Provisioner for running all EKS 3rd party add-ons and cluster monitoring applications on a single - t3.2xlarge - node
+	- Dynamically created Provisioners (from Ansible) for running an entire IRTP Pilot deployment on a single - m6a-4xlarge - node
+	- Dynamically created Provisioners (from Ansible) for running an entire IRTP Pilot deployment on a single - t3.2xlarge - node
